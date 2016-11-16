@@ -241,11 +241,12 @@ public class SonarToGerritPublisher extends Publisher {
 //                logResultMap(file2issues, "Filter issues by changed lines: {0} elements");
             }
 
-            // Step 6 - Send review to Gerrit
-            ReviewInput reviewInput = getReviewResult(file2issues);
+            // Step 5 - Post review message
+            revision.review(getReviewResult(file2issues));
 
-            // Step 7 - Post review
-            revision.review(reviewInput);
+            // Step 6 - Post review score
+            revision.review(getReviewResultScore(file2issues));
+
             logMessage(listener, "jenkins.plugin.review.sent", Level.INFO);
         } catch (RestApiException e) {
             listener.getLogger().println("Unable to post review: " + e.getMessage());
@@ -369,10 +370,6 @@ public class SonarToGerritPublisher extends Publisher {
 
         reviewInput.notify = getNotificationSettings(finalIssuesCount);
 
-        if (postScore) {
-            reviewInput.label(category, getReviewMark(finalIssuesCount));
-        }
-
         reviewInput.comments = new HashMap<String, List<ReviewInput.CommentInput>>();
         for (String file : finalIssues.keySet()) {
             reviewInput.comments.put(file, Lists.newArrayList(
@@ -395,6 +392,15 @@ public class SonarToGerritPublisher extends Publisher {
                             )
                     )
             );
+        }
+        return reviewInput;
+    }
+
+    @VisibleForTesting
+    ReviewInput getReviewResultScore(Multimap<String, Issue> finalIssues) {
+        ReviewInput reviewInput = new ReviewInput();
+        if (isPostScore()) {
+            reviewInput.label(category, getReviewMark(finalIssues.size()));
         }
         return reviewInput;
     }

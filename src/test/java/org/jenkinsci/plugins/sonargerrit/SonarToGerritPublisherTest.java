@@ -192,35 +192,39 @@ public class SonarToGerritPublisherTest {
         ReviewInput reviewResult = builder.getReviewResult(finalIssues);
         Assert.assertEquals("Some Issues Header", reviewResult.message);
         Assert.assertEquals(1, reviewResult.comments.size());
+        Assert.assertEquals(ReviewInput.NotifyHandling.OWNER, reviewResult.notify);
+        reviewResult = builder.getReviewResultScore(finalIssues);
         Assert.assertEquals(1, reviewResult.labels.size());
         Assert.assertEquals(-1, reviewResult.labels.get("Test").intValue());
-        Assert.assertEquals(ReviewInput.NotifyHandling.OWNER, reviewResult.notify);
 
         builder = new SonarToGerritPublisher("", null, Severity.INFO.name(), true, false,
                 "No Issues Header", "Some Issues Header", "Issue Comment", false, "Test", "1", "-1", null, null);
         reviewResult = builder.getReviewResult(finalIssues);
         Assert.assertEquals("Some Issues Header", reviewResult.message);
         Assert.assertEquals(1, reviewResult.comments.size());
-        Assert.assertEquals(null, reviewResult.labels);
         Assert.assertEquals(ReviewInput.NotifyHandling.OWNER, reviewResult.notify);
+        reviewResult = builder.getReviewResultScore(finalIssues);
+        Assert.assertEquals(null, reviewResult.labels);
 
         builder = new SonarToGerritPublisher("", null, Severity.INFO.name(), true, false,
                 "No Issues Header", "Some Issues Header", "Issue Comment", true, "Test", "0", "0", null, null);
         reviewResult = builder.getReviewResult(finalIssues);
         Assert.assertEquals("Some Issues Header", reviewResult.message);
         Assert.assertEquals(1, reviewResult.comments.size());
+        Assert.assertEquals(ReviewInput.NotifyHandling.OWNER, reviewResult.notify);
+        reviewResult = builder.getReviewResultScore(finalIssues);
         Assert.assertEquals(1, reviewResult.labels.size());
         Assert.assertEquals(0, reviewResult.labels.get("Test").intValue());
-        Assert.assertEquals(ReviewInput.NotifyHandling.OWNER, reviewResult.notify);
 
         builder = new SonarToGerritPublisher("", null, Severity.INFO.name(), true, false,
                 "No Issues Header", "Some Issues Header", "Issue Comment", true, "Test", "1test", "-1test", "NONE", "ALL");
         reviewResult = builder.getReviewResult(finalIssues);
         Assert.assertEquals("Some Issues Header", reviewResult.message);
         Assert.assertEquals(1, reviewResult.comments.size());
+        Assert.assertEquals(ReviewInput.NotifyHandling.ALL, reviewResult.notify);
+        reviewResult = builder.getReviewResultScore(finalIssues);
         Assert.assertEquals(1, reviewResult.labels.size());
         Assert.assertEquals(0, reviewResult.labels.get("Test").intValue());
-        Assert.assertEquals(ReviewInput.NotifyHandling.ALL, reviewResult.notify);
 
         builder = new SonarToGerritPublisher("", null, Severity.INFO.name(), true, false,
                 "No Issues Header", "Some Issues Header", "Issue Comment", true, "Test", "1", "-1", null, null);
@@ -228,9 +232,10 @@ public class SonarToGerritPublisherTest {
         reviewResult = builder.getReviewResult(finalIssues);
         Assert.assertEquals("No Issues Header", reviewResult.message);
         Assert.assertEquals(0, reviewResult.comments.size());
+        Assert.assertEquals(ReviewInput.NotifyHandling.NONE, reviewResult.notify);
+        reviewResult = builder.getReviewResultScore(finalIssues);
         Assert.assertEquals(1, reviewResult.labels.size());
         Assert.assertEquals(+1, reviewResult.labels.get("Test").intValue());
-        Assert.assertEquals(ReviewInput.NotifyHandling.NONE, reviewResult.notify);
 
         builder = new SonarToGerritPublisher("", null, Severity.INFO.name(), true, false,
                 "No Issues Header", "Some Issues Header", "Issue Comment", true, "Test", "1", "-1", "OWNER_REVIEWERS", "ALL");
@@ -238,8 +243,9 @@ public class SonarToGerritPublisherTest {
         reviewResult = builder.getReviewResult(finalIssues);
         Assert.assertEquals("No Issues Header", reviewResult.message);
         Assert.assertEquals(0, reviewResult.comments.size());
-        Assert.assertEquals(1, reviewResult.labels.size());
         Assert.assertEquals(ReviewInput.NotifyHandling.OWNER_REVIEWERS, reviewResult.notify);
+        reviewResult = builder.getReviewResultScore(finalIssues);
+        Assert.assertEquals(1, reviewResult.labels.size());
         Assert.assertEquals(+1, reviewResult.labels.get("Test").intValue());
 
     }
