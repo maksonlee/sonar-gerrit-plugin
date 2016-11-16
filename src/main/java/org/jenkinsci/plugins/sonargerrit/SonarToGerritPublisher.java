@@ -17,6 +17,7 @@ import com.sonyericsson.hudson.plugins.gerrit.trigger.config.IGerritHudsonTrigge
 import com.sonyericsson.hudson.plugins.gerrit.trigger.hudsontrigger.GerritTrigger;
 import com.urswolfer.gerrit.client.rest.GerritAuthData;
 import com.urswolfer.gerrit.client.rest.GerritRestApiFactory;
+import com.urswolfer.gerrit.client.rest.http.HttpStatusException;
 import hudson.EnvVars;
 import hudson.Extension;
 import hudson.FilePath;
@@ -251,7 +252,10 @@ public class SonarToGerritPublisher extends Publisher {
         } catch (RestApiException e) {
             listener.getLogger().println("Unable to post review: " + e.getMessage());
             LOGGER.log(Level.SEVERE, "Unable to post review: " + e.getMessage(), e);
-            return false;
+
+            if (!(e instanceof HttpStatusException && ((HttpStatusException) e).getStatusCode() == 409) && e.getMessage().contains("change is closed")) {
+                return false;
+            }
         }
 
         return true;
