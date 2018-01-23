@@ -46,10 +46,14 @@ public class GerritReviewBuilder {
     }
 
     public ReviewInput buildReview() {
+        ReviewInput reviewInput = new ReviewInput();
+
         // review
-        String reviewMessage = getReviewMessage(finalIssuesToComment);
-        ReviewInput reviewInput = new ReviewInput().message(reviewMessage);
-        reviewInput.comments = generateComments();
+        if (reviewConfig != null) {
+            String reviewMessage = getReviewMessage(finalIssuesToComment);
+            reviewInput.message(reviewMessage);
+            reviewInput.comments = generateComments();
+        }
 
         // score
         int score = 0;

@@ -1,11 +1,13 @@
 package org.jenkinsci.plugins.sonargerrit;
 
 import com.google.common.base.MoreObjects;
+import com.google.common.collect.LinkedListMultimap;
 import com.google.common.collect.Multimap;
 import com.google.gerrit.extensions.api.changes.NotifyHandling;
 import com.google.gerrit.extensions.api.changes.ReviewInput;
 import com.google.gerrit.extensions.restapi.RestApiException;
 import com.sonyericsson.hudson.plugins.gerrit.trigger.hudsontrigger.GerritTrigger;
+import com.urswolfer.gerrit.client.rest.http.HttpStatusException;
 import hudson.*;
 import hudson.model.*;
 import hudson.tasks.BuildStepDescriptor;
@@ -138,14 +140,21 @@ public class SonarToGerritPublisher extends Publisher implements SimpleBuildStep
 
             //send review
             ReviewInput reviewInput = new GerritReviewBuilder(file2issuesToComment, file2issuesToScore,
-                    reviewConfig, scoreConfig, notificationConfig, inspectionConfig
+                    reviewConfig, null, notificationConfig, inspectionConfig
+            ).buildReview();
+            revisionInfo.sendReview(reviewInput);
+
+            reviewInput = new GerritReviewBuilder(file2issuesToComment, file2issuesToScore,
+                    null, scoreConfig, notificationConfig, inspectionConfig
             ).buildReview();
             revisionInfo.sendReview(reviewInput);
 
             TaskListenerLogger.logMessage(listener, LOGGER, Level.INFO, "jenkins.plugin.review.sent");
         } catch (RestApiException e) {
             LOGGER.log(Level.SEVERE, "Unable to post review: " + e.getMessage(), e);
-            throw new AbortException("Unable to post review: " + e.getMessage());
+            if (!(e instanceof HttpStatusException && ((HttpStatusException) e).getStatusCode() == 409) && e.getMessage().contains("change is closed")) {
+                throw new AbortException("Unable to post review: " + e.getMessage());
+            }
         } catch (NullPointerException | IllegalArgumentException | IllegalStateException e) {
             throw new AbortException(e.getMessage());
         }
