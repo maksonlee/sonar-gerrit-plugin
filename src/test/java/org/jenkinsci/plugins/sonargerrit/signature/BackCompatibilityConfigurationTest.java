@@ -3,6 +3,7 @@ package org.jenkinsci.plugins.sonargerrit.signature;
 import org.jenkinsci.plugins.sonargerrit.SonarToGerritPublisher;
 import org.junit.Assert;
 import org.junit.Test;
+import org.kohsuke.stapler.DataBoundSetter;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -122,7 +123,7 @@ public class BackCompatibilityConfigurationTest extends ConfigurationUpdateTest 
         Assert.assertNull(invokeGetter(p, "authConfig"));
 
         invokeSetter(p, "overrideCredentials", true);
-        invokeSetter(p, "httpUsername", httpUsername);
+//        invokeSetter(p, "httpUsername", httpUsername);
         Assert.assertNotNull(invokeGetter(p, "authConfig"));
         Assert.assertEquals(httpUsername, invokeGetter(p, "authConfig", "username"));
     }
@@ -136,7 +137,7 @@ public class BackCompatibilityConfigurationTest extends ConfigurationUpdateTest 
         Assert.assertNull(invokeGetter(p, "authConfig"));
 
         invokeSetter(p, "overrideCredentials", true);
-        invokeSetter(p, "httpPassword", httpPassword);
+//        invokeSetter(p, "httpPassword", httpPassword);
         Assert.assertNotNull(invokeGetter(p, "authConfig"));
         Assert.assertEquals(httpPassword, invokeGetter(p, "authConfig", "password"));
     }
@@ -159,7 +160,7 @@ public class BackCompatibilityConfigurationTest extends ConfigurationUpdateTest 
         Assert.assertNull(invokeGetter(p, "scoreConfig"));
 
         invokeSetter(p, "postScore", true);
-        invokeSetter(p, "category", category);
+//        invokeSetter(p, "category", category);
         Assert.assertNotNull(invokeGetter(p, "scoreConfig"));
         Assert.assertEquals(category, invokeGetter(p, "scoreConfig", "category"));
     }
@@ -173,7 +174,7 @@ public class BackCompatibilityConfigurationTest extends ConfigurationUpdateTest 
         Assert.assertNull(invokeGetter(p, "scoreConfig"));
 
         invokeSetter(p, "postScore", true);
-        invokeSetter(p, "noIssuesScore", noIssuesScore);
+//        invokeSetter(p, "noIssuesScore", noIssuesScore);
         Assert.assertNotNull(invokeGetter(p, "scoreConfig"));
         Assert.assertEquals(noIssuesScore, invokeGetter(p, "scoreConfig", "noIssuesScore").toString());
     }
@@ -187,9 +188,32 @@ public class BackCompatibilityConfigurationTest extends ConfigurationUpdateTest 
         Assert.assertNull(invokeGetter(p, "scoreConfig"));
 
         invokeSetter(p, "postScore", true);
-        invokeSetter(p, "issuesScore", issuesScore);
+//        invokeSetter(p, "issuesScore", issuesScore);
         Assert.assertNotNull(invokeGetter(p, "scoreConfig"));
         Assert.assertEquals(issuesScore, invokeGetter(p, "scoreConfig", "issuesScore").toString());
+    }
+
+    @Test
+    public void testGetter() throws ReflectiveOperationException {
+        SonarToGerritPublisher p = invokeConstructor();
+        Assert.assertNull(invokeGetter(p, true, "severity"));
+        Assert.assertFalse((boolean) invokeGetter(p, true, true, "newIssuesOnly"));
+        Assert.assertFalse((boolean) invokeGetter(p, true, true, "changedLinesOnly"));
+        Assert.assertNull(invokeGetter(p, true, "noIssuesToPostText"));
+        Assert.assertNull(invokeGetter(p, true, "someIssuesToPostText"));
+        Assert.assertNull(invokeGetter(p, true, "issueComment"));
+        Assert.assertFalse((boolean) invokeGetter(p, true, true, "overrideCredentials"));
+        Assert.assertNull(invokeGetter(p, true, "httpUsername"));
+        Assert.assertNull(invokeGetter(p, true, "httpPassword"));
+        Assert.assertFalse((boolean) invokeGetter(p, true, true, "postScore"));
+        Assert.assertNull(invokeGetter(p, true, "category"));
+        Assert.assertNull(invokeGetter(p, true, "noIssuesScore"));
+        Assert.assertNull(invokeGetter(p, true, "issuesScore"));
+        Assert.assertNull(invokeGetter(p, true, "subJobConfigs"));
+        Assert.assertNull(invokeGetter(p, true, "projectPath"));
+        Assert.assertNull(invokeGetter(p, true, "path"));
+        Assert.assertNull(invokeGetter(p, true, "noIssuesNotification"));
+        Assert.assertNull(invokeGetter(p, true, "issuesNotification"));
     }
 
     @Test
@@ -252,14 +276,50 @@ public class BackCompatibilityConfigurationTest extends ConfigurationUpdateTest 
 
         List value = new LinkedList<>();
         value.add(c);
-        invokeSetter(p, "subJobConfigs", value);
+//        next string doesn't work because value type is LinkedList, but setter parameter type is List.
+//        invokeSetter(p, "subJobConfigs", value);
+        invokeMethod(p, "setSubJobConfigs", value, Deprecated.class, DataBoundSetter.class);
         Assert.assertEquals(invokeGetter(c, "projectPath"), invokeGetter(p, "inspectionConfig", "baseConfig", "projectPath"));
         Assert.assertEquals(invokeGetter(c, "sonarReportPath"), invokeGetter(p, "inspectionConfig", "baseConfig", "sonarReportPath"));
-
     }
 
     @Override
     protected void invokeSetter(SonarToGerritPublisher obj, String field, Object value) throws ReflectiveOperationException {
         super.invokeSetter(obj, field, value, true);
     }
+
+
+    @Override
+    protected Object invokeGetter(Object obj, String... field) throws ReflectiveOperationException {
+        return invokeGetter(obj, false, false, field);
+    }
+
+
+    protected Object invokeGetter(Object obj, boolean deprecated, String... field) throws ReflectiveOperationException {
+        return invokeGetter(obj, deprecated, false, field);
+    }
+
+    protected Object invokeGetter(Object obj, boolean deprecated, boolean isBool, String... field) throws ReflectiveOperationException {
+        if (deprecated) {
+            return invokeDeprecatedGetter(obj, isBool, field[0]);
+        } else {
+            return super.invokeGetter(obj, field);
+        }
+    }
+
+    private Object invokeDeprecatedGetter(Object obj, boolean isBool, String field) throws ReflectiveOperationException {
+        try {
+            Object val = super.invokeGetter(obj, field);
+        } catch (NoSuchFieldException ex) {
+            // that's normal: we are testing back compatibility, so there should no field be left
+
+            String prefix = isBool ? "is" : "get";
+            String methodName = prefix + field.substring(0, 1).toUpperCase() + field.substring(1);
+            // back compatibility getters should be deprecated
+            return invokeMethod(obj, methodName, Deprecated.class);
+        }
+        throw new AssertionError("NoSuchFieldException was expected: there should be no field left");
+    }
+
+
 }
